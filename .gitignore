@@ -1,0 +1,10 @@
+.build/
+DerivedData/
+*.xcuserstate
+post.md
+# Keep the shared schemes (the point of this repo), ignore the rest of .swiftpm
+/.swiftpm/*
+!/.swiftpm/xcode/
+/.swiftpm/xcode/*
+!/.swiftpm/xcode/xcshareddata/
+xcuserdata/

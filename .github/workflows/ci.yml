@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Default Xcode of the current macOS image (Xcode 26+): naive scheme must fail.
+          - runner: macos-latest
+            xcode: default
+          # An older image with an Xcode 16 install: naive scheme is expected to build.
+          - runner: macos-15
+            xcode: "16"
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        if: matrix.xcode != 'default'
+        run: |
+          ls -d /Applications/Xcode*.app
+          app=$(ls -d /Applications/Xcode_${{ matrix.xcode }}*.app | sort -V | tail -1)
+          sudo xcode-select -s "$app"
+      - run: xcodebuild -version
+      - name: tests/run.sh
+        run: tests/run.sh
