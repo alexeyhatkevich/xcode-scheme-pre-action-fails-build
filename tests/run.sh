@@ -51,7 +51,6 @@ fi
 
 # ------------------------------------------------------------ xcodebuild checks
 XCODE_VERSION="$(xcodebuild -version | awk 'NR==1{print $2}')"
-XCODE_MAJOR="${XCODE_VERSION%%.*}"
 echo "== xcodebuild checks (Xcode $XCODE_VERSION)"
 
 build() { # scheme -> sets rc; log in $WORK/<scheme>.log
@@ -72,14 +71,10 @@ check "test_xcodebuild_log_contains_pre_action_stdout" 'grep -q PREACTION_STDOUT
 # (a) The naive pre-action exits 1 because the scheme never passes the flag.
 export PREBUILD_LOG="$WORK/naive-prebuild.log"
 build Naive; summary Naive
-if [ "$XCODE_MAJOR" -ge 26 ]; then
-  # Xcode 26+: a failing pre-action fails the whole build.
-  check "test_naive_pre_action_fails_the_build_on_xcode_26_plus" \
-    '[ $rc -ne 0 ] && grep -q "Run custom shell script '"'"'Project setup'"'"'" "$WORK/Naive.log"'
-else
-  # Before Xcode 26 the failure was only logged and the build went on.
-  check "test_naive_pre_action_is_ignored_before_xcode_26" '[ $rc -eq 0 ]'
-fi
+# xcodebuild fails the build when a pre-action exits non-zero. Observed on
+# Xcode 16.4, 26.x and 27.0 (see README for the full list).
+check "test_naive_pre_action_fails_the_build" \
+  '[ $rc -ne 0 ] && grep -q "Run custom shell script '"'"'Project setup'"'"'" "$WORK/Naive.log"'
 check "test_naive_pre_action_error_went_to_redirected_log" 'grep -q "is required" "$PREBUILD_LOG"'
 
 # The fixed pre-action detects the scheme action, warns and lets the build continue.
