@@ -1,0 +1,82 @@
+name: Demo
+options:
+  bundleIdPrefix: com.alexeyhatkevich
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+packages:
+  PreActionDemo:
+    path: ..
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+targets:
+  Demo:
+    type: application
+    platform: iOS
+    sources: [Demo]
+    dependencies:
+      - package: PreActionDemo
+        product: Greeter
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.alexeyhatkevich.xcode-scheme-pre-action-fails-build.demo
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+      configs:
+        Debug:
+          "CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]": NO
+schemes:
+  # Default scheme: no pre-action, always builds. Cmd-U runs the package tests.
+  Demo:
+    build:
+      targets:
+        Demo: all
+    run:
+      config: Debug
+      environmentVariables:
+        DEMO_SCHEME: Demo
+    test:
+      config: Debug
+      targets:
+        - package: PreActionDemo/GreeterTests
+  # Build pre-action calls the NAIVE setup script without its required flag:
+  # the script exits 1 and the build fails ("Run custom shell script 'Project setup'").
+  Demo-Naive:
+    build:
+      targets:
+        Demo: all
+      preActions:
+        - name: Project setup
+          settingsTarget: Demo
+          script: |
+            exec > "${PREBUILD_LOG:-/tmp/demo-prebuild.log}" 2>&1
+            cd "$SRCROOT/.."
+            scripts/prebuild_naive.sh
+    run:
+      config: Debug
+      environmentVariables:
+        DEMO_SCHEME: Demo-Naive
+  # Same pre-action calling the FIXED script: it sees SCHEME_ACTION_NAME,
+  # prints a warning, exits 0, and the build goes on.
+  Demo-Fixed:
+    build:
+      targets:
+        Demo: all
+      preActions:
+        - name: Project setup
+          settingsTarget: Demo
+          script: |
+            exec > "${PREBUILD_LOG:-/tmp/demo-prebuild.log}" 2>&1
+            cd "$SRCROOT/.."
+            scripts/prebuild_fixed.sh
+    run:
+      config: Debug
+      environmentVariables:
+        DEMO_SCHEME: Demo-Fixed

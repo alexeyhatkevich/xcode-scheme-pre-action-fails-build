@@ -12,6 +12,25 @@ where the behaviour changed (not reproduced here: IDE builds can't be automated
 in CI). Either way, the safe assumption today is: a non-zero pre-action = a failed
 build.
 
+## How to run
+
+1. Open `Demo/Demo.xcodeproj` in Xcode 15+ (it uses this package as a local dependency).
+2. Pick the **Demo** scheme and any iPhone simulator, then press **⌘R**. In the app,
+   switch **Naive / Fixed** and **Xcode pre-action / Terminal / CI**: Naive called as
+   an Xcode pre-action exits 1 = **BUILD FAILED**; Fixed warns and exits 0 =
+   **BUILD SUCCEEDED**; from a terminal both still fail without the flag.
+3. See the real thing: build the **Demo-Naive** scheme (fails with
+   `Run custom shell script 'Project setup'`), then **Demo-Fixed** (builds; the
+   pre-action output with the warning is in `/tmp/demo-prebuild.log`).
+4. **⌘U** on the Demo scheme runs the package tests (`GreeterTests`). On the iOS
+   simulator the test that executes the real shell scripts is skipped.
+5. `swift test` works too (the package is plain Swift, no UIKit) and runs all
+   tests on macOS, including the one that runs `scripts/prebuild_*.sh`.
+   `tests/run.sh` is still the full check with the SwiftPM schemes below.
+
+`Demo/project.yml` is the XcodeGen spec the project was generated from
+(`cd Demo && xcodegen generate`).
+
 ## What's in here
 
 | Path | What it is |
@@ -23,6 +42,8 @@ build.
 | `scripts/prebuild_naive.sh` | Setup script: `--resources-branch` missing = `exit 1` |
 | `scripts/prebuild_fixed.sh` | Same, but when `SCHEME_ACTION_NAME` is set (Xcode scheme action) it warns and exits 0 |
 | `tests/run.sh` | Shell checks + `xcodebuild` checks for all three schemes |
+| `Sources/Greeter/PreActionScript.swift`, `tests/GreeterTests` | Swift model of the two scripts + XCTests (checked against the real scripts on macOS) |
+| `Demo/` | iOS demo app; schemes `Demo` (no pre-action), `Demo-Naive`, `Demo-Fixed` |
 
 ## The fix in one block
 
