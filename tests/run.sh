@@ -72,7 +72,7 @@ check "test_xcodebuild_log_contains_pre_action_stdout" 'grep -q PREACTION_STDOUT
 export PREBUILD_LOG="$WORK/naive-prebuild.log"
 build Naive; summary Naive
 # xcodebuild fails the build when a pre-action exits non-zero. Observed on
-# Xcode 16.4, 26.x and 27.0 (see README for the full list).
+# Xcode 15.4, 16.0, 16.4, 26.0.1, 26.6 and 27.0.
 check "test_naive_pre_action_fails_the_build" \
   '[ $rc -ne 0 ] && grep -q "Run custom shell script '"'"'Project setup'"'"'" "$WORK/Naive.log"'
 check "test_naive_pre_action_error_went_to_redirected_log" 'grep -q "is required" "$PREBUILD_LOG"'

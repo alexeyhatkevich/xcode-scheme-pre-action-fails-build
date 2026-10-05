@@ -1,10 +1,16 @@
-# Xcode 26+: a failing scheme pre-action fails the build
+# A failing Xcode scheme pre-action fails the build
 
-Minimal reproduction of a build break that appears when you upgrade to Xcode 26:
-a shared scheme has a **Build pre-action** that calls a project setup script, the
-script exits non-zero, and the whole scheme stops building. Older Xcode versions
-logged the failing pre-action and carried on, so the problem can sit unnoticed
-for a long time.
+Minimal reproduction of a build break: a shared scheme has a **Build pre-action**
+that calls a project setup script, the script exits non-zero, and the whole scheme
+stops building.
+
+How it was found: the scheme kept building in the IDE of older Xcode versions while
+its pre-action was failing, and it broke for everyone after moving to Xcode 26. The CI
+matrix here shows that **`xcodebuild` already fails the build on a failing
+pre-action in every version tested, from Xcode 15.4 to 27.0**, so the IDE side is
+where the behaviour changed (not reproduced here: IDE builds can't be automated
+in CI). Either way, the safe assumption today is: a non-zero pre-action = a failed
+build.
 
 ## What's in here
 
@@ -57,8 +63,11 @@ script, so the raw log contains your whole environment, tokens included.
 - Xcode 27.0 (27A266a), macOS, locally: naive scheme fails with
   `The following build commands failed: Run custom shell script 'Project setup'`
   (exit code 65); fixed scheme builds; `SCHEME_ACTION_NAME=Project setup` inside the pre-action.
-- CI (`.github/workflows/ci.yml`): see the latest run for the Xcode versions on the
-  GitHub-hosted runners.
+- CI (`.github/workflows/ci.yml`), same results on GitHub-hosted runners with
+  Xcode 15.4, 16.0, 16.4, 26.0.1 and 26.6: the naive scheme fails, the fixed scheme
+  builds, `SCHEME_ACTION_NAME` is the action title.
+- Not verified here: the Xcode IDE behaviour (failing pre-action not stopping the
+  build in the IDE of older Xcode versions) and the `.xcscheme` overwrite below; both are from day-to-day use.
 
 ## Two more gotchas
 
